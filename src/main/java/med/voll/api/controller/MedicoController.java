@@ -2,12 +2,17 @@ package med.voll.api.controller;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import med.voll.api.direccion.DatosDireccion;
 import med.voll.api.medico.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/medicos")
@@ -17,10 +22,24 @@ public class MedicoController {
     private MedicoRepository medicoRepository;
 
     @PostMapping
-    public void registrarMedico(@RequestBody @Valid DatosRegistroMedico datosRegistroMedico) {
-        System.out.println("El request llega correctamente");
-        System.out.println(datosRegistroMedico);
-        medicoRepository.save(new Medico(datosRegistroMedico));
+    public ResponseEntity<DatosRespuestaMedico> registrarMedico(@RequestBody @Valid DatosRegistroMedico datosRegistroMedico, UriComponentsBuilder uriComponentsBuilder){
+        Medico medico = medicoRepository.save(new Medico(datosRegistroMedico));
+        // Return 201
+        // URL donde encontrar al medico
+        // GET http://localhost:8080/medicos/
+        DatosRespuestaMedico datosRespuestaMedico = new DatosRespuestaMedico(medico.getId(),
+                medico.getNombre(),
+                medico.getEmail(),
+                medico.getTelefono(),
+                medico.getEspecialidad().toString(),
+                new DatosDireccion(medico.getDireccion().getCalle(),
+                        medico.getDireccion().getDistrito(),
+                        medico.getDireccion().getCiudad(),
+                        medico.getDireccion().getNumero(),
+                        medico.getDireccion().getComplemento()));
+        //URI url = "http://localhost:8080/" + medico.getId();
+        URI url = uriComponentsBuilder.path("/medicos/{id}").buildAndExpand(medico.getId()).toUri();
+        return ResponseEntity.created(url).body(datosRespuestaMedico);
     }
     /*
     @GetMapping
@@ -36,9 +55,19 @@ public class MedicoController {
 
     @PutMapping
     @Transactional
-    public void actualizarMedico(@RequestBody @Valid DatosActualizarMedico datosActualizarMedico){
+    public ResponseEntity actualizarMedico(@RequestBody @Valid DatosActualizarMedico datosActualizarMedico){
         Medico medico = medicoRepository.getReferenceById(datosActualizarMedico.id());
         medico.actualizarDatos(datosActualizarMedico);
+        return ResponseEntity.ok(new DatosRespuestaMedico(medico.getId(),
+                medico.getNombre(),
+                medico.getEmail(),
+                medico.getTelefono(),
+                medico.getEspecialidad().toString(),
+                new DatosDireccion(medico.getDireccion().getCalle(),
+                        medico.getDireccion().getDistrito(),
+                        medico.getDireccion().getCiudad(),
+                        medico.getDireccion().getNumero(),
+                        medico.getDireccion().getComplemento())));
     }
 
     // DELETE IN DATABASE
@@ -53,8 +82,10 @@ public class MedicoController {
     //LOGICAL DELETE
     @DeleteMapping("/{id}")
     @Transactional
-    public void eliminarMedico(@PathVariable  Long id){
+    public ResponseEntity eliminarMedico(@PathVariable  Long id){
         Medico medico = medicoRepository.getReferenceById(id);
         medico.desactivarMedico();
+        return ResponseEntity.noContent().build();
+        // Return 204
     }
 }
