@@ -20,6 +20,7 @@ public class AutenticacionController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
     private TokenService tokenService;
 
     @PostMapping
