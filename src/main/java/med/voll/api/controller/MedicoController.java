@@ -22,7 +22,7 @@ public class MedicoController {
     private MedicoRepository medicoRepository;
 
     @PostMapping
-    public ResponseEntity<DatosRespuestaMedico> registrarMedico(@RequestBody @Valid DatosRegistroMedico datosRegistroMedico, UriComponentsBuilder uriComponentsBuilder){
+    public ResponseEntity<DatosRespuestaMedico> registrarMedico(@RequestBody @Valid DatosRegistroMedico datosRegistroMedico, UriComponentsBuilder uriComponentsBuilder) {
         Medico medico = medicoRepository.save(new Medico(datosRegistroMedico));
         // Return 201
         // URL donde encontrar al medico
@@ -48,14 +48,14 @@ public class MedicoController {
     }*/
 
     @GetMapping
-    public Page<DatosListadoMedico> listadoMedico(@PageableDefault(size = 10) Pageable paginacion) {
+    public ResponseEntity<Page<DatosListadoMedico>> listadoMedico(@PageableDefault(size = 10) Pageable paginacion) {
         //return medicoRepository.findAll(paginacion).map(DatosListadoMedico::new);
-        return medicoRepository.findByActivoTrue(paginacion).map(DatosListadoMedico::new);
+        return ResponseEntity.ok(medicoRepository.findByActivoTrue(paginacion).map(DatosListadoMedico::new));
     }
 
     @PutMapping
     @Transactional
-    public ResponseEntity actualizarMedico(@RequestBody @Valid DatosActualizarMedico datosActualizarMedico){
+    public ResponseEntity actualizarMedico(@RequestBody @Valid DatosActualizarMedico datosActualizarMedico) {
         Medico medico = medicoRepository.getReferenceById(datosActualizarMedico.id());
         medico.actualizarDatos(datosActualizarMedico);
         return ResponseEntity.ok(new DatosRespuestaMedico(medico.getId(),
@@ -82,10 +82,30 @@ public class MedicoController {
     //LOGICAL DELETE
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity eliminarMedico(@PathVariable  Long id){
+    public ResponseEntity eliminarMedico(@PathVariable Long id) {
         Medico medico = medicoRepository.getReferenceById(id);
         medico.desactivarMedico();
         return ResponseEntity.noContent().build();
         // Return 204
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<DatosRespuestaMedico> retornaDatosMedico(@PathVariable Long id) {
+        Medico medico = medicoRepository.getReferenceById(id);
+        var datosMedico = new DatosRespuestaMedico(medico.getId(),
+                medico.getNombre(),
+                medico.getEmail(),
+                medico.getTelefono(),
+                medico.getEspecialidad().toString(),
+                new DatosDireccion(medico.getDireccion().getCalle(),
+                        medico.getDireccion().getDistrito(),
+                        medico.getDireccion().getCiudad(),
+                        medico.getDireccion().getNumero(),
+                        medico.getDireccion().getComplemento()));
+
+        return ResponseEntity.ok(datosMedico);
+        // Return 204
+    }
+
+
 }
