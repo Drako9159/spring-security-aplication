@@ -1,0 +1,1 @@
+INSERT INTO usuarios (login, clave) VALUES ("drako.drako", "hash");
